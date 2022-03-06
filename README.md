@@ -8,5 +8,7 @@ The app allows a user to manage books. Specifically, it allows a user to
 save books as "Read", "Want to Read", or "Currently Reading." Additional
 books can be added after being searched for.
 
+## Installing
+
 * install all project dependencies with `npm install`
 * start the development server with `npm start`
