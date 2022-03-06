@@ -2,31 +2,46 @@ import React, { Component } from 'react'
 import { Link } from 'react-router-dom'
 import { BooksGrid } from './BookShelf'
 import * as BooksAPI from './BooksAPI'
+import throttle from 'lodash.throttle';
 
 class Search extends Component {
     state = {
         query : '',
-        books : [],
-        userBooks : {}
+        books : {},
+        shelves : {}
+    }
+
+    constructor(props) {
+        super(props);
+        this.searchBarChangeHandler = this.searchBarChangeHandler.bind(this);
+        this.handleClickThrottled = throttle(this.searchBarChangeHandler, 250);
+    }
+
+    componentWillUnmount() {
+        this.handleClickThrottled.cancel();
     }
 
     componentDidMount() {
         BooksAPI.getAll()
-        .then((books) => {
-            let booksDict = {}
-            for (const book of books) {
-                booksDict[book.id] = book
-            }
-            this.setState({
-                userBooks : booksDict
+            .then((books) => {
+                let shelves = {}
+                for (const book of books) {
+                    shelves[book.id] = book.shelf
+                }
+                this.setState({
+                    shelves : shelves,
+                })
             })
-        })
     }
 
     updateBooks = (books) => {
-        this.setState(() => ({
-            books: books
-        }))
+        let booksDict = {}
+        for (const book of books) {
+            booksDict[book.id] = book
+        }
+        this.setState({
+            books : booksDict
+        })
     }
 
     updateQuery = (query) => {
@@ -44,15 +59,17 @@ class Search extends Component {
                     this.updateBooks([])
                 } else if (books !== undefined) {
                     for (const book of books) {
-                        let shelf = this.state.userBooks[book.id];
+                        let shelf = this.state.shelves[book.id];
                         if (!shelf) {
-                            shelf = "none"
+                            book.shelf = "none";
+                        } else {
+                            book.shelf = shelf;
                         }
-                        book.shelf = shelf
+                        
                     }
-                    this.updateBooks(books)
+                    this.updateBooks(books);
                 } else {
-                    this.updateBooks([])
+                    this.updateBooks([]);
                 }
             })
             .catch((error) => {
@@ -61,28 +78,23 @@ class Search extends Component {
     }
 
     onShelfUpdate = (book, shelf) => {
-        let wasShelf = book.shelf
-        let newState = Object.assign({}, this.state)
-        book.shelf = shelf
-        newState.userBooks[book.id] = book
-        this.setState(newState)
-
+        let wasShelf = this.state.shelves[book.id]
         if (wasShelf === undefined) {
             wasShelf = "none"
         }
-
+        let newState = Object.assign({}, this.state)
+        newState.shelves[book.id] = shelf
         this.setState(newState)
 
         BooksAPI.update(book, shelf)
-        .catch((error) => {
-            book.shelf = wasShelf
-            newState.userBooks[book.id] = book
-            this.setState(newState)
-        })
+            .catch((error) => {
+                newState.shelves[book.id] = wasShelf
+                this.setState(newState)
+            })
     }
 
     render() {
-        const { query } = this.state
+        const { query, books, shelves } = this.state
         return (
             <div className="search-books">
                 <div className="search-books-bar">
@@ -101,8 +113,9 @@ class Search extends Component {
                 </div>
                 <div className="search-books-results">
                     <BooksGrid
-                        bookIDs={Object.keys(this.state.books)}
-                        books={this.state.books}
+                        bookIDs={Object.keys(books)}
+                        books={books}
+                        shelves={shelves}
                         onShelfUpdate={this.onShelfUpdate}
                     />
                 </div>
