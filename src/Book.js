@@ -1,5 +1,6 @@
-import React, { Component } from 'react'
-import BookShelfChanger from './BookShelfChanger'
+import React, { Component } from 'react';
+import BookShelfChanger from './BookShelfChanger';
+import PropTypes from 'prop-types';
 
 function Author(props) {
     return (
@@ -7,10 +8,19 @@ function Author(props) {
     )
 }
 
+Author.propTypes = {
+    author: PropTypes.string.isRequired
+}
+
 class Book extends Component {
+    static propTypes = {
+        book: PropTypes.object.isRequired,
+        onShelfUpdate: PropTypes.func.isRequired,
+        shelf: PropTypes.string.isRequired,
+    }
+
     render() {
         const { book, onShelfUpdate, shelf } = this.props
-        const { authors, title } = this.props.book
         const url = (this.props.book.imageLinks && 
                      this.props.book.imageLinks.thumbnail)
 
@@ -30,8 +40,8 @@ class Book extends Component {
                             value={shelf}
                         />
                     </div>
-                    <div className="book-title">{title}</div>
-                    {authors && authors.map((author, index) => (
+                    <div className="book-title">{book.title}</div>
+                    {book.authors && book.authors.map((author, index) => (
                         <Author
                             key={index} 
                             author={author}
